@@ -47,7 +47,7 @@ bool PmergeMe::parseInput(int argc, char** argv) {
 		_dequeData.push_back(static_cast<int>(num));
 	}
 
-	return !_vectorData.empty();
+	return true;
 }
 
 void PmergeMe::generateJacobsthalSequence(std::vector<size_t>& sequence, size_t n) {
@@ -68,20 +68,78 @@ void PmergeMe::generateJacobsthalSequence(std::vector<size_t>& sequence, size_t 
 	}
 	
 	sequence.clear();
-	
+
 	for (size_t i = 2; i < jacobsthal.size(); ++i) {
 		size_t current = jacobsthal[i];
 		size_t prev = jacobsthal[i - 1];
-		
-		for (size_t j = current; j > prev && j < n; --j) {
-			sequence.push_back(j);
+		for (size_t j = current; j > prev; --j) {
+			if (j < n)
+				sequence.push_back(j);
 		}
 	}
-
-	size_t last = jacobsthal.empty() ? 0 : jacobsthal.back();
+	
+	size_t last = jacobsthal.size() > 2 ? jacobsthal.back() : 1;
 	for (size_t i = last + 1; i < n; ++i) {
 		sequence.push_back(i);
 	}
+}
+
+void PmergeMe::mergeVector(std::vector<int>& arr, std::vector<int>& leftArr, std::vector<int>& rightArr) {
+	int n1 = leftArr.size();
+	int n2 = rightArr.size();
+	
+	int i = 0, j = 0, k = 0;
+	
+	while (i < n1 && j < n2) {
+		if (leftArr[i] <= rightArr[j]) {
+			arr[k] = leftArr[i];
+			++i;
+		} else {
+			arr[k] = rightArr[j];
+			++j;
+		}
+		++k;
+	}
+	
+	while (i < n1) {
+		arr[k] = leftArr[i];
+		++i;
+		++k;
+	}
+	
+	while (j < n2) {
+		arr[k] = rightArr[j];
+		++j;
+		++k;
+	}
+}
+
+void PmergeMe::mergeSortVector(std::vector<int>& arr) {
+	int n = arr.size();
+	if (n <= 1)
+		return;
+	
+	if (n <= 20) {
+		for (int i = 1; i < n; ++i) {
+			int key = arr[i];
+			int pos = binarySearchVector(arr, key, 0, i - 1);
+			
+			for (int j = i; j > pos; --j) {
+				arr[j] = arr[j - 1];
+			}
+			arr[pos] = key;
+		}
+		return;
+	}
+	
+	int mid = n / 2;
+	std::vector<int> left(arr.begin(), arr.begin() + mid);
+	std::vector<int> right(arr.begin() + mid, arr.end());
+	
+	mergeSortVector(left);
+	mergeSortVector(right);
+	
+	mergeVector(arr, left, right);
 }
 
 
@@ -155,6 +213,7 @@ void PmergeMe::mergeInsertSortVector(std::vector<int>& arr) {
 	
 	if (!pend.empty()) {
 		mainChain.insert(mainChain.begin(), pend[0]);
+		pend.erase(pend.begin());
 	}
 	
 	std::vector<size_t> insertionOrder;
@@ -162,7 +221,7 @@ void PmergeMe::mergeInsertSortVector(std::vector<int>& arr) {
 	
 	for (size_t i = 0; i < insertionOrder.size(); ++i) {
 		size_t idx = insertionOrder[i];
-		if (idx > 0 && idx < pend.size()) {
+		if (idx < pend.size()) {
 			int item = pend[idx];
 			int pos = binarySearchVector(mainChain, item, 0, mainChain.size() - 1);
 			mainChain.insert(mainChain.begin() + pos, item);
@@ -176,79 +235,6 @@ void PmergeMe::mergeInsertSortVector(std::vector<int>& arr) {
 	
 	arr = mainChain;
 }
-
-
-void PmergeMe::mergeVector(std::vector<int>& arr, int left, int mid, int right) {
-	int n1 = mid - left + 1;
-	int n2 = right - mid;
-	
-	std::vector<int> leftArr(n1);
-	std::vector<int> rightArr(n2);
-	
-	for (int i = 0; i < n1; ++i)
-		leftArr[i] = arr[left + i];
-	for (int j = 0; j < n2; ++j)
-		rightArr[j] = arr[mid + 1 + j];
-	
-	int i = 0, j = 0, k = left;
-	
-	while (i < n1 && j < n2) {
-		if (leftArr[i] <= rightArr[j]) {
-			arr[k] = leftArr[i];
-			++i;
-		} else {
-			arr[k] = rightArr[j];
-			++j;
-		}
-		++k;
-	}
-	
-	while (i < n1) {
-		arr[k] = leftArr[i];
-		++i;
-		++k;
-	}
-	
-	while (j < n2) {
-		arr[k] = rightArr[j];
-		++j;
-		++k;
-	}
-}
-
-void PmergeMe::mergeSortVector(std::vector<int>& arr) {
-	int n = arr.size();
-	if (n <= 1)
-		return;
-	
-	if (n <= 20) {
-		for (int i = 1; i < n; ++i) {
-			int key = arr[i];
-			int pos = binarySearchVector(arr, key, 0, i - 1);
-			
-			for (int j = i; j > pos; --j) {
-				arr[j] = arr[j - 1];
-			}
-			arr[pos] = key;
-		}
-		return;
-	}
-	
-	int mid = n / 2;
-	std::vector<int> left(arr.begin(), arr.begin() + mid);
-	std::vector<int> right(arr.begin() + mid, arr.end());
-	
-	mergeSortVector(left);
-	mergeSortVector(right);
-	
-	for (int i = 0; i < mid; ++i)
-		arr[i] = left[i];
-	for (int i = 0; i < n - mid; ++i)
-		arr[mid + i] = right[i];
-	
-	mergeVector(arr, 0, mid - 1, n - 1);
-}
-
 
 int PmergeMe::binarySearchDeque(const std::deque<int>& arr, int item, int left, int right) {
 	while (left <= right) {
@@ -264,19 +250,11 @@ int PmergeMe::binarySearchDeque(const std::deque<int>& arr, int item, int left, 
 	return left;
 }
 
-void PmergeMe::mergeDeque(std::deque<int>& arr, int left, int mid, int right) {
-	int n1 = mid - left + 1;
-	int n2 = right - mid;
+void PmergeMe::mergeDeque(std::deque<int>& arr, std::deque<int>& leftArr, std::deque<int>& rightArr) {
+	int n1 = leftArr.size();
+	int n2 = rightArr.size();
 	
-	std::deque<int> leftArr(n1);
-	std::deque<int> rightArr(n2);
-	
-	for (int i = 0; i < n1; ++i)
-		leftArr[i] = arr[left + i];
-	for (int j = 0; j < n2; ++j)
-		rightArr[j] = arr[mid + 1 + j];
-	
-	int i = 0, j = 0, k = left;
+	int i = 0, j = 0, k = 0;
 	
 	while (i < n1 && j < n2) {
 		if (leftArr[i] <= rightArr[j]) {
@@ -327,12 +305,7 @@ void PmergeMe::mergeSortDeque(std::deque<int>& arr) {
 	mergeSortDeque(left);
 	mergeSortDeque(right);
 	
-	for (int i = 0; i < mid; ++i)
-		arr[i] = left[i];
-	for (int i = 0; i < n - mid; ++i)
-		arr[mid + i] = right[i];
-	
-	mergeDeque(arr, 0, mid - 1, n - 1);
+	mergeDeque(arr, left, right);
 }
 
 void PmergeMe::mergeInsertSortDeque(std::deque<int>& arr) {
@@ -390,6 +363,7 @@ void PmergeMe::mergeInsertSortDeque(std::deque<int>& arr) {
 	
 	if (!pend.empty()) {
 		mainChain.push_front(pend[0]);
+		pend.erase(pend.begin());
 	}
 	
 	std::vector<size_t> insertionOrder;
@@ -397,7 +371,7 @@ void PmergeMe::mergeInsertSortDeque(std::deque<int>& arr) {
 	
 	for (size_t i = 0; i < insertionOrder.size(); ++i) {
 		size_t idx = insertionOrder[i];
-		if (idx > 0 && idx < pend.size()) {
+		if (idx < pend.size()) {
 			int item = pend[idx];
 			int pos = binarySearchDeque(mainChain, item, 0, mainChain.size() - 1);
 			mainChain.insert(mainChain.begin() + pos, item);
