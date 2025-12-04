@@ -61,7 +61,7 @@ void PmergeMe::generateJacobsthalSequence(std::vector<size_t>& sequence, size_t 
 	size_t idx = 2;
 	while (true) {
 		size_t next = jacobsthal[idx - 1] + 2 * jacobsthal[idx - 2];
-		if (next >= n)
+		if (next + 1 > n)
 			break;
 		jacobsthal.push_back(next);
 		++idx;
@@ -69,19 +69,25 @@ void PmergeMe::generateJacobsthalSequence(std::vector<size_t>& sequence, size_t 
 	
 	sequence.clear();
 
-	for (size_t i = 2; i < jacobsthal.size(); ++i) {
-		size_t current = jacobsthal[i];
-		size_t prev = jacobsthal[i - 1];
-		for (size_t j = current; j > prev; --j) {
-			if (j < n)
-				sequence.push_back(j);
-		}
-	}
-	
-	size_t last = jacobsthal.size() > 2 ? jacobsthal.back() : 1;
-	for (size_t i = last + 1; i < n; ++i) {
-		sequence.push_back(i);
-	}
+    std::vector<bool> added(n, false);
+    
+    for (size_t i = 2; i < jacobsthal.size(); ++i) {
+        size_t current = jacobsthal[i];
+        size_t prev = jacobsthal[i - 1];
+        
+        for (size_t j = (current < n ? current : n - 1); j > prev; --j) {
+            if (!added[j]) {
+                sequence.push_back(j);
+                added[j] = true;
+            }
+        }
+    }
+    
+    for (size_t i = 0; i < n; ++i) {
+        if (!added[i]) {
+            sequence.push_back(i);
+        }
+    }
 }
 
 void PmergeMe::mergeVector(std::vector<int>& arr, std::vector<int>& leftArr, std::vector<int>& rightArr) {
