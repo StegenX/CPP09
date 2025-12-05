@@ -50,18 +50,8 @@ bool BitcoinExchange::isValidDate(const std::string& date) const {
 	int month = std::atoi(date.substr(5, 2).c_str());
 	int day = std::atoi(date.substr(8, 2).c_str());
 
-	if (year < 0 || month < 1 || month > 12 || day < 1 || day > 31)
+	if (year < 2008 || month < 1 || month > 12 || day < 1 || day > 31)
 		return false;
-
-	// Check days per month
-	if (month == 2) {
-		bool isLeap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-		if (day > (isLeap ? 29 : 28))
-			return false;
-	} else if (month == 4 || month == 6 || month == 9 || month == 11) {
-		if (day > 30)
-			return false;
-	}
 
 	return true;
 }
@@ -83,15 +73,15 @@ bool BitcoinExchange::loadDatabase(const std::string& filename) {
 	}
 
 	std::string line;
-	std::getline(file, line); // Skip header
+	std::getline(file, line);
 
 	while (std::getline(file, line)) {
-		size_t comma = line.find(',');
-		if (comma == std::string::npos)
+		size_t pipe = line.find('|');
+		if (pipe == std::string::npos)
 			continue;
 
-		std::string date = trim(line.substr(0, comma));
-		std::string value = trim(line.substr(comma + 1));
+		std::string date = trim(line.substr(0, pipe));
+		std::string value = trim(line.substr(pipe + 1));
 
 		if (isValidDate(date)) {
 			double rate = stringToDouble(value);
@@ -108,7 +98,6 @@ double BitcoinExchange::getExchangeRate(const std::string& date) const {
 	if (it != _database.end())
 		return it->second;
 
-	// Find the closest lower date
 	it = _database.lower_bound(date);
 	if (it == _database.begin())
 		return 0;
@@ -124,7 +113,7 @@ void BitcoinExchange::processInputFile(const std::string& filename) {
 	}
 
 	std::string line;
-	std::getline(file, line); // Skip header
+	std::getline(file, line);
 
 	while (std::getline(file, line)) {
 		size_t pipe = line.find('|');
